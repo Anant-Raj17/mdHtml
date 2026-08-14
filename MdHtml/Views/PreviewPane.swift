@@ -12,7 +12,7 @@ struct PreviewPane: View {
                         set: { appModel.updateDraft($0) }
                     ))
                 } else {
-                    WebPreviewView(file: file, markdownSource: appModel.markdownDraft)
+                    WebPreviewView(file: file, source: appModel.previewSource)
                 }
             } else {
                 ContentUnavailableView {

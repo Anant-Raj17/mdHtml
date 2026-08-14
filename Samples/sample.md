@@ -2,6 +2,8 @@
 
 This is a **lightweight** Markdown preview sample.
 
+<!-- @mdhtml: Agents can read this note in the markdown source. -->
+
 ## Features
 
 - Fast rendering
