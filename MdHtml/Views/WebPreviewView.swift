@@ -14,7 +14,32 @@ struct WebPreviewView: View {
             onRequestAddComment: { appModel.beginAddComment(anchor: $0) },
             onRemoveComment: { text, line in appModel.removeComment(text, nearLine: line) }
         )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .id("\(file.url.path)-\(source.hashValue)")
+    }
+}
+
+/// Container so WKWebView always receives a non-zero layout frame from SwiftUI.
+private final class WebViewHost: NSView {
+    let webView: WKWebView
+
+    init(webView: WKWebView) {
+        self.webView = webView
+        super.init(frame: .zero)
+        wantsLayer = true
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(webView)
+        NSLayoutConstraint.activate([
+            webView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            webView.topAnchor.constraint(equalTo: topAnchor),
+            webView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }
 
@@ -28,7 +53,7 @@ private struct WebPreviewRepresentable: NSViewRepresentable {
         Coordinator(onRequestAddComment: onRequestAddComment, onRemoveComment: onRemoveComment)
     }
 
-    func makeNSView(context: Context) -> WKWebView {
+    func makeNSView(context: Context) -> WebViewHost {
         let userContent = WKUserContentController()
         userContent.add(context.coordinator, name: "mdhtml")
         userContent.addUserScript(WKUserScript(
@@ -42,12 +67,19 @@ private struct WebPreviewRepresentable: NSViewRepresentable {
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.setValue(false, forKey: "drawsBackground")
+        webView.navigationDelegate = context.coordinator
+        webView.setValue(true, forKey: "drawsBackground")
+        webView.underPageBackgroundColor = NSColor.textBackgroundColor
+
+        // SwiftUI can recreate the WKWebView while reusing the coordinator.
+        context.coordinator.loadedToken = nil
         context.coordinator.webView = webView
-        return webView
+
+        return WebViewHost(webView: webView)
     }
 
-    func updateNSView(_ webView: WKWebView, context: Context) {
+    func updateNSView(_ host: WebViewHost, context: Context) {
+        context.coordinator.webView = host.webView
         context.coordinator.onRequestAddComment = onRequestAddComment
         context.coordinator.onRemoveComment = onRemoveComment
 
@@ -55,39 +87,29 @@ private struct WebPreviewRepresentable: NSViewRepresentable {
         guard context.coordinator.loadedToken != token else { return }
         context.coordinator.loadedToken = token
 
-        let folderURL = file.url.deletingLastPathComponent()
         switch file.kind {
         case .html:
-            let html = preparedHTML(from: source, baseURL: folderURL)
-            webView.loadHTMLString(html, baseURL: folderURL)
+            let html = preparedHTML(from: source)
+            // Avoid file:// base URLs with loadHTMLString — App Sandbox often blanks the page.
+            host.webView.loadHTMLString(html, baseURL: nil)
         case .markdown:
-            let html = MarkdownRenderer.renderHTML(from: source, baseURL: folderURL)
-            webView.loadHTMLString(html, baseURL: folderURL)
+            let html = MarkdownRenderer.renderHTML(from: source, baseURL: nil)
+            host.webView.loadHTMLString(html, baseURL: nil)
         }
     }
 
-    static func dismantleNSView(_ nsView: WKWebView, coordinator: Coordinator) {
-        nsView.configuration.userContentController.removeScriptMessageHandler(forName: "mdhtml")
+    static func dismantleNSView(_ nsView: WebViewHost, coordinator: Coordinator) {
+        nsView.webView.configuration.userContentController.removeScriptMessageHandler(forName: "mdhtml")
     }
 
-    private func preparedHTML(from html: String, baseURL: URL) -> String {
-        var output = CommentMarkup.replaceCommentsWithBoxes(in: html)
-        if output.range(of: "<base", options: .caseInsensitive) == nil {
-            let baseTag = "<base href=\"\(baseURL.absoluteString)\">"
-            if let headRange = output.range(of: "<head", options: .caseInsensitive),
-               let tagEnd = output[headRange.lowerBound...].range(of: ">") {
-                output.insert(contentsOf: baseTag, at: tagEnd.upperBound)
-            } else {
-                output = "<head>\(baseTag)</head>" + output
-            }
-        }
-        return output
+    private func preparedHTML(from html: String) -> String {
+        CommentMarkup.replaceCommentsWithBoxes(in: html)
     }
 
-    final class Coordinator: NSObject, WKScriptMessageHandler {
+    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         var onRequestAddComment: (CommentAnchor) -> Void
         var onRemoveComment: (String, Int?) -> Void
-        var loadedToken = ""
+        var loadedToken: String?
         weak var webView: WKWebView?
         private var pendingAnchor: CommentAnchor?
 
@@ -104,6 +126,14 @@ private struct WebPreviewRepresentable: NSViewRepresentable {
             DispatchQueue.main.async { [weak self] in
                 self?.showMenu(for: anchor)
             }
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            loadedToken = nil
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            loadedToken = nil
         }
 
         private func showMenu(for anchor: CommentAnchor) {

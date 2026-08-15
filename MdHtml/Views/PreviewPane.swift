@@ -12,7 +12,10 @@ struct PreviewPane: View {
                         set: { appModel.updateDraft($0) }
                     ))
                 } else {
+                    // WebKit preview keeps right-click comments working for md/html.
+                    // Loading/layout fixes in WebPreviewView address the blank-pane bug.
                     WebPreviewView(file: file, source: appModel.previewSource)
+                        .id(file.id)
                 }
             } else {
                 ContentUnavailableView {
@@ -23,6 +26,7 @@ struct PreviewPane: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .textBackgroundColor))
         .navigationTitle(appModel.windowTitle)
     }
 }

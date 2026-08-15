@@ -2,11 +2,19 @@ import Foundation
 import Markdown
 
 enum MarkdownRenderer {
-    static func renderHTML(from markdown: String, baseURL: URL) -> String {
+    static func renderHTML(from markdown: String, baseURL: URL?) -> String {
         let document = Document(parsing: markdown)
         var renderer = HTMLMarkupRenderer()
         let body = CommentMarkup.replaceCommentsWithBoxes(in: renderer.visit(document))
         let css = previewCSS + "\n" + CommentMarkup.previewCSS
+        let baseTag: String
+        if let baseURL {
+            let href = baseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                + "/"
+            baseTag = "<base href=\"\(href)\">"
+        } else {
+            baseTag = ""
+        }
 
         return """
         <!DOCTYPE html>
@@ -14,11 +22,11 @@ enum MarkdownRenderer {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <base href="\(baseURL.absoluteString)/">
+          \(baseTag)
           <style>\(css)</style>
         </head>
         <body>
-        \(body)
+        \(body.isEmpty ? "<p><em>Empty markdown file.</em></p>" : body)
         </body>
         </html>
         """
@@ -31,7 +39,9 @@ enum MarkdownRenderer {
         }
 
         return """
-        body { font: -apple-system-body; line-height: 1.5; margin: 24px; color: #1d1d1f; }
+        :root { color-scheme: light dark; }
+        html, body { background: #fff; color: #1d1d1f; }
+        body { font: -apple-system-body; line-height: 1.5; margin: 24px; }
         h1,h2,h3,h4,h5,h6 { line-height: 1.2; margin-top: 1.4em; margin-bottom: 0.5em; }
         pre { background: #f5f5f7; padding: 12px; overflow-x: auto; border-radius: 6px; }
         code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
@@ -39,6 +49,11 @@ enum MarkdownRenderer {
         blockquote { border-left: 3px solid #d2d2d7; margin-left: 0; padding-left: 12px; color: #515154; }
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #d2d2d7; padding: 6px 10px; text-align: left; }
+        @media (prefers-color-scheme: dark) {
+          html, body { background: #1e1e1e; color: #f5f5f7; }
+          pre { background: #2c2c2e; }
+          a { color: #6cb6ff; }
+        }
         """
     }
 }
