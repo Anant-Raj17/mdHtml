@@ -21,7 +21,8 @@
 		A1000000000000000000000C /* PreviewStyles.css in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000C /* PreviewStyles.css */; };
 		A1000000000000000000000D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000D /* Assets.xcassets */; };
 		A1000000000000000000000E /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = A50000000000000000000001 /* Markdown */; };
-		A1000000000000000000000F /* NativeMarkdownPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* NativeMarkdownPreview.swift */; };
+		A10000000000000000000010 /* CommentMarkup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* CommentMarkup.swift */; };
+		A10000000000000000000011 /* NativeMarkdownPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* NativeMarkdownPreview.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,7 +41,8 @@
 		A2000000000000000000000D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A2000000000000000000000E /* MdHtml.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MdHtml.entitlements; sourceTree = "<group>"; };
 		A2000000000000000000000F /* MdHtml.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MdHtml.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A20000000000000000000010 /* NativeMarkdownPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeMarkdownPreview.swift; sourceTree = "<group>"; };
+		A20000000000000000000010 /* CommentMarkup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentMarkup.swift; sourceTree = "<group>"; };
+		A20000000000000000000011 /* NativeMarkdownPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeMarkdownPreview.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,6 +103,7 @@
 				A20000000000000000000005 /* BookmarkStore.swift */,
 				A20000000000000000000006 /* FolderBrowser.swift */,
 				A20000000000000000000007 /* MarkdownRenderer.swift */,
+				A20000000000000000000010 /* CommentMarkup.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -112,7 +115,7 @@
 				A20000000000000000000009 /* PreviewPane.swift */,
 				A2000000000000000000000A /* MarkdownEditorView.swift */,
 				A2000000000000000000000B /* WebPreviewView.swift */,
-				A20000000000000000000010 /* NativeMarkdownPreview.swift */,
+				A20000000000000000000011 /* NativeMarkdownPreview.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -212,7 +215,8 @@
 				A10000000000000000000009 /* PreviewPane.swift in Sources */,
 				A1000000000000000000000A /* MarkdownEditorView.swift in Sources */,
 				A1000000000000000000000B /* WebPreviewView.swift in Sources */,
-				A1000000000000000000000F /* NativeMarkdownPreview.swift in Sources */,
+				A10000000000000000000010 /* CommentMarkup.swift in Sources */,
+				A10000000000000000000011 /* NativeMarkdownPreview.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

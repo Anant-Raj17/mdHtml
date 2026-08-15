@@ -11,13 +11,10 @@ struct PreviewPane: View {
                         get: { appModel.markdownDraft },
                         set: { appModel.updateDraft($0) }
                     ))
-                } else if file.kind == .markdown {
-                    // Avoid WKWebView for markdown — sandbox/XPC was leaving a blank pane
-                    // even after HTML was successfully written to disk.
-                    NativeMarkdownPreview(source: appModel.markdownDraft)
-                        .id(file.id)
                 } else {
-                    WebPreviewView(file: file, markdownSource: appModel.markdownDraft)
+                    // WebKit preview keeps right-click comments working for md/html.
+                    // Loading/layout fixes in WebPreviewView address the blank-pane bug.
+                    WebPreviewView(file: file, source: appModel.previewSource)
                         .id(file.id)
                 }
             } else {

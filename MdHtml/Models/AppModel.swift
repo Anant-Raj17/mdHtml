@@ -11,14 +11,28 @@ final class AppModel: ObservableObject {
     @Published var isEditingMarkdown = false
     @Published var markdownDraft = ""
     @Published var isDirty = false
+    @Published var htmlSource = ""
+    @Published var commentDraft = ""
     @Published var showUnsavedAlert = false
     @Published var pendingSelection: FileItem?
 
     private var folderAccessActive = false
+    private var pendingCommentAnchor: CommentAnchor?
 
     init() {
         if let restored = BookmarkStore.restoreBookmarkedURL() {
             openFolder(restored, persistBookmark: false)
+        }
+    }
+
+    var previewSource: String {
+        switch selectedFile?.kind {
+        case .markdown:
+            return markdownDraft
+        case .html:
+            return htmlSource
+        case nil:
+            return ""
         }
     }
 
@@ -162,17 +176,99 @@ final class AppModel: ObservableObject {
     }
 
     func reloadCurrentFileContent() {
-        guard let file = selectedFile, file.kind == .markdown else {
+        guard let file = selectedFile else {
             markdownDraft = ""
+            htmlSource = ""
             return
         }
 
         do {
-            markdownDraft = try String(contentsOf: file.url, encoding: .utf8)
+            let text = try String(contentsOf: file.url, encoding: .utf8)
+            switch file.kind {
+            case .markdown:
+                markdownDraft = text
+                htmlSource = ""
+            case .html:
+                htmlSource = text
+                markdownDraft = ""
+            }
             isDirty = false
         } catch {
             markdownDraft = ""
+            htmlSource = ""
             presentError("Could not read file.", error: error)
+        }
+    }
+
+    func beginAddComment(anchor: CommentAnchor) {
+        pendingCommentAnchor = anchor
+        commentDraft = ""
+
+        let alert = NSAlert()
+        alert.messageText = "Add Comment"
+        alert.informativeText = "Saved in the file as an HTML comment so agents can read it."
+        alert.addButton(withTitle: "Add")
+        alert.addButton(withTitle: "Cancel")
+
+        let field = NSTextField(string: "")
+        field.placeholderString = "Comment"
+        field.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            commentDraft = field.stringValue
+            submitComment()
+        } else {
+            cancelAddComment()
+        }
+    }
+
+    func cancelAddComment() {
+        commentDraft = ""
+        pendingCommentAnchor = nil
+    }
+
+    func submitComment() {
+        let text = commentDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, let file = selectedFile, let anchor = pendingCommentAnchor else {
+            cancelAddComment()
+            return
+        }
+
+        let updated = CommentMarkup.insert(comment: text, into: currentSource(for: file), kind: file.kind, anchor: anchor)
+        writeSource(updated, for: file)
+        cancelAddComment()
+    }
+
+    func removeComment(_ text: String, nearLine: Int?) {
+        guard let file = selectedFile else { return }
+        let updated = CommentMarkup.remove(comment: text, from: currentSource(for: file), nearLine: nearLine)
+        writeSource(updated, for: file)
+    }
+
+    private func currentSource(for file: FileItem) -> String {
+        switch file.kind {
+        case .markdown:
+            return markdownDraft
+        case .html:
+            return htmlSource
+        }
+    }
+
+    private func writeSource(_ text: String, for file: FileItem) {
+        do {
+            try text.write(to: file.url, atomically: true, encoding: .utf8)
+            switch file.kind {
+            case .markdown:
+                markdownDraft = text
+            case .html:
+                htmlSource = text
+            }
+            isDirty = false
+        } catch {
+            presentError("Could not save comment.", error: error)
         }
     }
 
