@@ -11,8 +11,14 @@ struct PreviewPane: View {
                         get: { appModel.markdownDraft },
                         set: { appModel.updateDraft($0) }
                     ))
+                } else if file.kind == .markdown {
+                    // Avoid WKWebView for markdown — sandbox/XPC was leaving a blank pane
+                    // even after HTML was successfully written to disk.
+                    NativeMarkdownPreview(source: appModel.markdownDraft)
+                        .id(file.id)
                 } else {
                     WebPreviewView(file: file, markdownSource: appModel.markdownDraft)
+                        .id(file.id)
                 }
             } else {
                 ContentUnavailableView {
@@ -23,6 +29,7 @@ struct PreviewPane: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .textBackgroundColor))
         .navigationTitle(appModel.windowTitle)
     }
 }

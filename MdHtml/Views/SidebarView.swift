@@ -16,21 +16,42 @@ struct SidebarView: View {
                     }
                 }
             } else {
-                List(appModel.files, selection: Binding(
-                    get: { appModel.selectedFile },
-                    set: { appModel.selectFile($0) }
-                )) { file in
-                    Label {
-                        Text(file.relativePath)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    } icon: {
-                        Image(systemName: file.kind == .markdown ? "doc.richtext" : "globe")
+                List(selection: Binding<URL?>(
+                    get: { appModel.selectedFile?.id },
+                    set: { id in
+                        let file = appModel.files.first(where: { $0.id == id })
+                        appModel.selectFile(file)
                     }
-                    .tag(file)
+                )) {
+                    SidebarFolderContent(node: appModel.fileTree)
                 }
             }
         }
         .frame(minWidth: 220)
+    }
+}
+
+private struct SidebarFolderContent: View {
+    let node: FolderNode
+
+    var body: some View {
+        ForEach(node.folders) { folder in
+            DisclosureGroup {
+                SidebarFolderContent(node: folder)
+            } label: {
+                Label(folder.name, systemImage: "folder.fill")
+            }
+        }
+
+        ForEach(node.files) { file in
+            Label {
+                Text(file.name)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            } icon: {
+                Image(systemName: file.kind == .markdown ? "doc.richtext" : "globe")
+            }
+            .tag(file.id)
+        }
     }
 }

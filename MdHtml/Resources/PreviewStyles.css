@@ -1,8 +1,16 @@
+:root {
+  color-scheme: light dark;
+}
+
+html, body {
+  background: #ffffff;
+  color: #1d1d1f;
+}
+
 body {
   font: -apple-system-body;
   line-height: 1.55;
   margin: 24px;
-  color: #1d1d1f;
   max-width: 860px;
 }
 
@@ -10,6 +18,10 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
   margin-top: 1.4em;
   margin-bottom: 0.5em;
+}
+
+h1:first-child, h2:first-child, h3:first-child {
+  margin-top: 0;
 }
 
 p, ul, ol, pre, blockquote, table {
@@ -59,4 +71,32 @@ hr {
 
 a {
   color: #0066cc;
+}
+
+@media (prefers-color-scheme: dark) {
+  html, body {
+    background: #1e1e1e;
+    color: #f5f5f7;
+  }
+
+  pre {
+    background: #2c2c2e;
+  }
+
+  blockquote {
+    border-left-color: #48484a;
+    color: #aeaeb2;
+  }
+
+  th, td {
+    border-color: #48484a;
+  }
+
+  hr {
+    border-top-color: #48484a;
+  }
+
+  a {
+    color: #6cb6ff;
+  }
 }

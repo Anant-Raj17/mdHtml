@@ -8,6 +8,9 @@ xcuserdata/
 # macOS
 .DS_Store
 
+# Generated markdown preview HTML
+.mdhtml-preview/
+
 # Swift Package Manager
 .build/
 Packages/

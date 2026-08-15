@@ -6,6 +6,7 @@ import SwiftUI
 final class AppModel: ObservableObject {
     @Published private(set) var folderURL: URL?
     @Published private(set) var files: [FileItem] = []
+    @Published private(set) var fileTree: FolderNode = FolderNode(id: "", name: "", folders: [], files: [])
     @Published var selectedFile: FileItem?
     @Published var isEditingMarkdown = false
     @Published var markdownDraft = ""
@@ -48,24 +49,32 @@ final class AppModel: ObservableObject {
     func openFolder(_ url: URL, persistBookmark: Bool) {
         stopFolderAccess()
 
-        guard url.startAccessingSecurityScopedResource() else { return }
-        folderAccessActive = true
+        // Security-scoped access is required in the sandbox after Open panel /
+        // bookmark restore. Don't abort if the call returns false for an
+        // already-accessible path — still attempt to list files.
+        folderAccessActive = url.startAccessingSecurityScopedResource()
         folderURL = url
         files = FolderBrowser.listSupportedFiles(in: url)
+        fileTree = FolderNode.buildTree(from: files)
 
         if persistBookmark {
             BookmarkStore.saveBookmark(for: url)
         }
 
         if let selected = selectedFile,
-           files.contains(where: { $0.url == selected.url }) {
+           let match = files.first(where: { $0.url == selected.url }) {
+            selectedFile = match
             reloadCurrentFileContent()
         } else {
-            selectedFile = files.first
+            selectedFile = preferredInitialSelection()
             isEditingMarkdown = false
             isDirty = false
             reloadCurrentFileContent()
         }
+    }
+
+    private func preferredInitialSelection() -> FileItem? {
+        files.first(where: { $0.kind == .markdown }) ?? files.first
     }
 
     func selectFile(_ file: FileItem?) {
